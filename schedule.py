@@ -14,10 +14,11 @@ def create_schedule():
         "Douche": "FFD1DC",
         "Travail": "FFB3BA",
         "Courses": "FFCCCC",
-        "Repas du midi": "D7BDE2",
-        "Repas du soir": "D5D8DC",
+        "Déjeuner": "D7BDE2",
+        "Dîner": "D5D8DC",
         "Sommeil": "B3E0FF",
         "Ménage": "C5E1A5",
+        "Cuisine": "F9E79F",
         "Réunion familiale": "ABEBC6",
         "Réunion amis": "FAD7A0",
         "Temps libre": "FFFFFF"
@@ -36,23 +37,46 @@ def create_schedule():
         sheet.cell(row=row, column=1, value=time.strftime("%H:%M"))
     sheet.column_dimensions['A'].width = 17
 
+    # Structure du tableau activities :
+    # Chaque élément est un tuple de 4 éléments :
+    # ("Nom de l'activité", durée, jours, "heure de début")
+    #
+    # 1. Nom de l'activité : string
+    # 2. Durée : integer (en demi-heures, ex: 2 = 1 heure, 4 = 2 heures)
+    # 3. Jours : objet range ou liste
+    #    - range(5) : [0, 1, 2, 3, 4] (lundi à vendredi)
+    #    - range(7) : [0, 1, 2, 3, 4, 5, 6] (tous les jours)
+    #    - [5, 6] : samedi et dimanche
+    #    - [0, 2, 4] : lundi, mercredi, vendredi
+    # 4. Heure de début : string au format "HH:MM"
+    #
+    # Exemples :
+    # ("Sommeil", 18, range(5), "22:00")  # 9h de sommeil, lun-ven, début à 22h
+    # ("Weekend", 24, [5, 6], "22:00")    # 12h de sommeil, sam-dim, début à 22h
+    # ("Travail", 16, range(5), "09:00")  # 8h de travail, lun-ven, début à 9h
+    # ("Sport", 4, [1, 3, 5], "18:00")    # 2h de sport, mar-jeu-sam, début à 18h
+    #
+    # Pour modifier :
+    # - Ajoutez, supprimez ou modifiez les tuples dans la liste activities
+    # - Assurez-vous que les activités ne se chevauchent pas dans le temps
+    # - Vérifiez que la durée totale des activités par jour ne dépasse pas 48 (24h)
+
     # Remplir le planning
     activities = [
         ("Sommeil", 18, range(5), "22:00"),
-        ("Sommeil", 24, [5, 6], "22:00"),
+        ("Sommeil", 23, [5, 6], "22:00"),
         ("Petit déjeuner", 1, range(5), "07:00"),
-        ("Petit déjeuner", 1, [5, 6], "10:00"),
+        ("Petit déjeuner", 1, [5, 6], "09:30"),
         ("Salle de sport", 4, range(5), "07:30"),
         ("Douche", 1, range(5), "09:30"),
-        ("Douche", 1, [6], "10:30"),
         ("Courses", 3, [1, 4], "10:00"),
         ("Travail", 16, range(5), "11:00"),
-        ("Repas du midi", 2, range(5), "12:30"),
-        ("Repas du midi", 2, [6], "13:30"),
-        ("Repas du soir", 2, range(7), "19:00"),
-        ("Ménage", 6, [5], "10:30"),
-        ("Douche", 1, [5], "13:30"),
-        ("Repas du midi", 2, [5], "14:00"),
+        ("Déjeuner", 2, range(5), "12:30"),
+        ("Déjeuner", 2, [5, 6], "12:30"),
+        ("Dîner", 2, range(7), "19:00"),
+        ("Ménage", 4, [5], "10:00"),
+        ("Douche", 1, [5, 6], "12:00"),
+        ("Cuisine", 4, [6], "10:00"),
         ("Réunion familiale", 3, [6], "20:00"),
         ("Réunion amis", 6, [4], "20:00")
     ]
@@ -95,10 +119,11 @@ def create_schedule():
         ("Douche", "Quotidienne, matin, 30 min (à la salle de sport ou à la maison)"),
         ("Travail", "2 x 4h quotidiennes du lundi au vendredi, commence à 11h"),
         ("Courses", "2 fois par semaine, 1h30, matin avant le travail"),
-        ("Repas du midi", "Quotidien, 1h, commence à 12h30 (14h le samedi, 13h30 le dimanche)"),
-        ("Repas du soir", "Quotidien, 1h"),
+        ("Déjeuner", "Quotidien, 1h, commence à 12h30 (14h le samedi, 13h30 le dimanche)"),
+        ("Dîner", "Quotidien, 1h"),
         ("Sommeil", "9h par nuit (jusqu'à 10h le weekend)"),
-        ("Ménage", "3h / semaine, samedi matin avant le repas du midi"),
+        ("Ménage", "3h / semaine, samedi matin avant le Déjeuner"),
+        ("Cuisine", "4h / semaine, dimanche matin avant le Déjeuner"),
         ("Réunion familiale", "1h30 / semaine, dimanche à 20h"),
         ("Réunion amis", "3h / semaine, vendredi soir"),
         ("Temps libre", "Plages de temps non affectées")
