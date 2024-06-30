@@ -37,22 +37,25 @@ def create_schedule():
     sheet.column_dimensions['A'].width = 17
 
     # Remplir le planning
-    activities = {
-        "Sommeil": {"duration": 18, "days": range(5), "start_time": "22:00"},
-        "Sommeil weekend": {"duration": 24, "days": [5, 6], "start_time": "22:00"},
-        "Petit déjeuner": {"duration": 1, "days": range(5), "start_time": "07:00"},
-        "Petit déjeuner weekend": {"duration": 1, "days": [5, 6], "start_time": "10:00"},
-        "Salle de sport": {"duration": 4, "days": range(5), "start_time": "07:30"},
-        "Douche": {"duration": 1, "days": range(7), "start_time": "09:30"},
-        "Courses": {"duration": 3, "days": [1, 4], "start_time": "10:00"},
-        "Travail": {"duration": 16, "days": range(5), "start_time": "11:00"},
-        "Repas du midi": {"duration": 2, "days": range(5), "start_time": "12:30"},
-        "Repas du midi weekend": {"duration": 2, "days": [5, 6], "start_time": "13:30"},
-        "Repas du soir": {"duration": 2, "days": range(7), "start_time": "19:00"},
-        "Ménage": {"duration": 6, "days": [5], "start_time": "10:30"},
-        "Réunion familiale": {"duration": 3, "days": [6], "start_time": "20:00"},
-        "Réunion amis": {"duration": 6, "days": [4], "start_time": "20:00"}
-    }
+    activities = [
+        ("Sommeil", 18, range(5), "22:00"),
+        ("Sommeil", 24, [5, 6], "22:00"),
+        ("Petit déjeuner", 1, range(5), "07:00"),
+        ("Petit déjeuner", 1, [5, 6], "10:00"),
+        ("Salle de sport", 4, range(5), "07:30"),
+        ("Douche", 1, range(5), "09:30"),
+        ("Douche", 1, [6], "10:30"),
+        ("Courses", 3, [1, 4], "10:00"),
+        ("Travail", 16, range(5), "11:00"),
+        ("Repas du midi", 2, range(5), "12:30"),
+        ("Repas du midi", 2, [6], "13:30"),
+        ("Repas du soir", 2, range(7), "19:00"),
+        ("Ménage", 6, [5], "10:30"),
+        ("Douche", 1, [5], "13:30"),
+        ("Repas du midi", 2, [5], "14:00"),
+        ("Réunion familiale", 3, [6], "20:00"),
+        ("Réunion amis", 6, [4], "20:00")
+    ]
 
     # Initialiser toutes les cellules comme "Temps libre"
     for row in range(2, 50):
@@ -66,32 +69,18 @@ def create_schedule():
         time = datetime.strptime(time_str, "%H:%M")
         return (time.hour * 2) + (time.minute // 30) + 2
 
-    # Fonction pour obtenir la couleur d'une activité
-    def get_activity_color(activity):
-        for key in colors:
-            if key in activity:
-                return colors[key]
-        return colors["Temps libre"]
-
     # Remplir le planning avec les activités
-    for activity, details in activities.items():
-        start_row = get_row_index(details["start_time"])
-        color = get_activity_color(activity)
-        base_activity = activity.split()[0] if activity != "Salle de sport" else activity
-        for day in details["days"]:
-            for i in range(details["duration"]):
+    total_time = {activity: 0 for activity in colors.keys()}
+    for activity, duration, days, start_time in activities:
+        start_row = get_row_index(start_time)
+        color = colors[activity]
+        for day in days:
+            for i in range(duration):
                 row = (start_row + i - 1) % 48 + 2  # Wrap around to the next day if necessary
                 cell = sheet.cell(row=row, column=day + 2)
-                cell.value = base_activity
+                cell.value = activity
                 cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-
-    # Calculer le temps total par activité
-    total_time = {}
-    for activity, details in activities.items():
-        base_activity = activity.split()[0] if activity != "Salle de sport" else activity
-        if base_activity not in total_time:
-            total_time[base_activity] = 0
-        total_time[base_activity] += details["duration"] * len(details["days"]) * 30  # en minutes
+                total_time[activity] += 30  # Ajouter 30 minutes à chaque fois
 
     # Calculer le temps libre total
     total_time_activities = sum(total_time.values())
@@ -101,12 +90,12 @@ def create_schedule():
     start_col = 10
     sheet.cell(row=1, column=start_col, value="Activités, fréquences, contraintes et temps total:")
     activity_details = [
-        ("Petit déjeuner", "Quotidien, matin, 30 min"),
+        ("Petit déjeuner", "Quotidien, matin, 30 min (7h en semaine, 10h le weekend)"),
         ("Salle de sport", "5 fois par semaine, matin, 2h"),
         ("Douche", "Quotidienne, matin, 30 min (à la salle de sport ou à la maison)"),
         ("Travail", "2 x 4h quotidiennes du lundi au vendredi, commence à 11h"),
         ("Courses", "2 fois par semaine, 1h30, matin avant le travail"),
-        ("Repas du midi", "Quotidien, 1h, commence à 12h30 (13h30 le weekend)"),
+        ("Repas du midi", "Quotidien, 1h, commence à 12h30 (14h le samedi, 13h30 le dimanche)"),
         ("Repas du soir", "Quotidien, 1h"),
         ("Sommeil", "9h par nuit (jusqu'à 10h le weekend)"),
         ("Ménage", "3h / semaine, samedi matin avant le repas du midi"),
