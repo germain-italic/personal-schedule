@@ -40,14 +40,16 @@ def create_schedule():
     activities = {
         "Sommeil": {"duration": 18, "days": range(5), "start_time": "22:00"},
         "Sommeil weekend": {"duration": 24, "days": [5, 6], "start_time": "22:00"},
-        "Petit déjeuner": {"duration": 1, "days": range(7), "start_time": "07:00"},
+        "Petit déjeuner": {"duration": 1, "days": range(5), "start_time": "07:00"},
+        "Petit déjeuner weekend": {"duration": 1, "days": [5, 6], "start_time": "10:00"},
         "Salle de sport": {"duration": 4, "days": range(5), "start_time": "07:30"},
         "Douche": {"duration": 1, "days": range(7), "start_time": "09:30"},
         "Courses": {"duration": 3, "days": [1, 4], "start_time": "10:00"},
         "Travail": {"duration": 16, "days": range(5), "start_time": "11:00"},
-        "Repas du midi": {"duration": 2, "days": range(7), "start_time": "12:30"},
+        "Repas du midi": {"duration": 2, "days": range(5), "start_time": "12:30"},
+        "Repas du midi weekend": {"duration": 2, "days": [5, 6], "start_time": "13:30"},
         "Repas du soir": {"duration": 2, "days": range(7), "start_time": "19:00"},
-        "Ménage": {"duration": 6, "days": [5], "start_time": "14:00"},
+        "Ménage": {"duration": 6, "days": [5], "start_time": "10:30"},
         "Réunion familiale": {"duration": 3, "days": [6], "start_time": "20:00"},
         "Réunion amis": {"duration": 6, "days": [4], "start_time": "20:00"}
     }
@@ -64,10 +66,17 @@ def create_schedule():
         time = datetime.strptime(time_str, "%H:%M")
         return (time.hour * 2) + (time.minute // 30) + 2
 
+    # Fonction pour obtenir la couleur d'une activité
+    def get_activity_color(activity):
+        for key in colors:
+            if key in activity:
+                return colors[key]
+        return colors["Temps libre"]
+
     # Remplir le planning avec les activités
     for activity, details in activities.items():
         start_row = get_row_index(details["start_time"])
-        color = colors.get(activity, colors.get(activity.split()[0], colors["Temps libre"]))
+        color = get_activity_color(activity)
         for day in details["days"]:
             for i in range(details["duration"]):
                 row = (start_row + i - 1) % 48 + 2  # Wrap around to the next day if necessary
@@ -78,10 +87,14 @@ def create_schedule():
     # Calculer le temps total par activité
     total_time = {}
     for activity, details in activities.items():
-        total_time[activity] = details["duration"] * len(details["days"]) * 30  # en minutes
+        base_activity = activity.split()[0] if activity != "Salle de sport" else activity
+        if base_activity not in total_time:
+            total_time[base_activity] = 0
+        total_time[base_activity] += details["duration"] * len(details["days"]) * 30  # en minutes
 
-    # Fusionner Sommeil et Sommeil weekend
-    total_time["Sommeil"] += total_time.pop("Sommeil weekend", 0)
+    # Calculer le temps libre total
+    total_time_activities = sum(total_time.values())
+    total_time["Temps libre"] = 7 * 24 * 60 - total_time_activities
 
     # Ajouter la liste des activités avec leurs fréquences, contraintes et temps total
     start_col = 10
@@ -92,16 +105,16 @@ def create_schedule():
         ("Douche", "Quotidienne, matin, 30 min (à la salle de sport ou à la maison)"),
         ("Travail", "2 x 4h quotidiennes du lundi au vendredi, commence à 11h"),
         ("Courses", "2 fois par semaine, 1h30, matin avant le travail"),
-        ("Repas du midi", "Quotidien, 1h, commence à 12h30"),
+        ("Repas du midi", "Quotidien, 1h, commence à 12h30 (13h30 le weekend)"),
         ("Repas du soir", "Quotidien, 1h"),
         ("Sommeil", "9h par nuit (jusqu'à 10h le weekend)"),
-        ("Ménage", "3h / semaine"),
+        ("Ménage", "3h / semaine, samedi matin avant le repas du midi"),
         ("Réunion familiale", "1h30 / semaine, dimanche à 20h"),
         ("Réunion amis", "3h / semaine, vendredi soir"),
         ("Temps libre", "Plages de temps non affectées")
     ]
     for row, (activity, details) in enumerate(activity_details, start=2):
-        sheet.cell(row=row, column=start_col).fill = PatternFill(start_color=colors.get(activity, colors["Temps libre"]), end_color=colors.get(activity, colors["Temps libre"]), fill_type="solid")
+        sheet.cell(row=row, column=start_col).fill = PatternFill(start_color=colors[activity], end_color=colors[activity], fill_type="solid")
         sheet.cell(row=row, column=start_col+1, value=activity)
         sheet.cell(row=row, column=start_col+2, value=details)
         if activity in total_time:
