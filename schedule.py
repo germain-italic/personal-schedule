@@ -77,11 +77,12 @@ def create_schedule():
     for activity, details in activities.items():
         start_row = get_row_index(details["start_time"])
         color = get_activity_color(activity)
+        base_activity = activity.split()[0] if activity != "Salle de sport" else activity
         for day in details["days"]:
             for i in range(details["duration"]):
                 row = (start_row + i - 1) % 48 + 2  # Wrap around to the next day if necessary
                 cell = sheet.cell(row=row, column=day + 2)
-                cell.value = activity
+                cell.value = base_activity
                 cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
 
     # Calculer le temps total par activité
